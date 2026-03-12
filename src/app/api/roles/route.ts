@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { withAuth, successResponse, errorResponse } from '@/lib/api-helpers'
+import { withAuth, withPermission, successResponse, errorResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@/generated/client'
 import { z } from 'zod'
@@ -11,7 +11,7 @@ const createRoleSchema = z.object({
 })
 
 // GET /api/roles
-export const GET = withAuth(async (req: NextRequest, ctx) => {
+export const GET = withPermission('roles:view', async (req: NextRequest, ctx) => {
     const roles = await prisma.role.findMany({
         where: {
             accountId: ctx.accountId,
@@ -44,7 +44,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 })
 
 // POST /api/roles
-export const POST = withAuth(async (req: NextRequest, ctx) => {
+export const POST = withPermission('roles:assign', async (req: NextRequest, ctx) => {
     try {
         const body = await req.json()
         const data = createRoleSchema.parse(body)

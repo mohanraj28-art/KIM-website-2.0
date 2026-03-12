@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
-import { withAuth, successResponse } from '@/lib/api-helpers'
+import { withAuth, withPermission, successResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/db'
 import { Prisma, AuditResult } from '@/generated/client'
 
 // GET /api/audit-logs
-export const GET = withAuth(async (req: NextRequest, ctx) => {
+export const GET = withPermission('audit:view', async (req: NextRequest, ctx) => {
     const { searchParams } = req.nextUrl
     const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
     const limit = Math.max(1, Math.min(parseInt(searchParams.get('limit') || '50') || 50, 100))

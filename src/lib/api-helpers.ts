@@ -117,6 +117,44 @@ export function withAdminAuth(handler: Handler) {
     })
 }
 
+export function withPermission(permissionKey: string, handler: Handler) {
+    return withAuth(async (req, ctx) => {
+        // Check if user has the specific permission in any of their roles
+        const hasPermission = await prisma.rolePermission.findFirst({
+            where: {
+                role: {
+                    members: {
+                        some: { userId: ctx.userId }
+                    }
+                },
+                permission: {
+                    key: permissionKey
+                }
+            }
+        })
+
+        if (!hasPermission) {
+            // Check if user is the account owner (bypass for owners)
+            const account = await prisma.account.findUnique({
+                where: { id: ctx.accountId },
+                include: {
+                    users: {
+                        orderBy: { createdAt: 'asc' },
+                        take: 1
+                    }
+                }
+            })
+
+            const isOwner = account?.users[0]?.id === ctx.userId
+            if (!isOwner) {
+                return NextResponse.json({ error: `Forbidden: Missing permission ${permissionKey}` }, { status: 403 })
+            }
+        }
+
+        return handler(req, ctx)
+    })
+}
+
 export function successResponse(data: unknown, status: number = 200) {
     return NextResponse.json({ success: true, data }, { status })
 }

@@ -7,6 +7,7 @@ async function main() {
         { key: 'users:create', name: 'Create User', category: 'Users' },
         { key: 'users:view', name: 'View Users', category: 'Users' },
         { key: 'roles:assign', name: 'Assign Roles', category: 'Roles' },
+        { key: 'roles:view', name: 'View Roles', category: 'Roles' },
         { key: 'groups:manage', name: 'Manage Groups', category: 'Groups' },
         { key: 'audit:view', name: 'View Audit Logs', category: 'Audit' },
     ];
