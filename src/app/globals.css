@@ -283,6 +283,23 @@ h6 {
   color: var(--text-muted);
 }
 
+select.input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b949e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  color-scheme: dark;
+  /* Forces the native dropdown to be dark on Windows/Mac */
+}
+
+select.input option {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: 10px;
+}
+
 .input:focus {
   border-color: var(--kaappu-500);
   background: rgba(99, 102, 241, 0.05);

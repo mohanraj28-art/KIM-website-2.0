@@ -89,6 +89,18 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
             return r
         })
 
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                action: 'role.updated',
+                result: 'SUCCESS',
+                resourceId: id,
+                accountId: ctx.accountId,
+                userId: ctx.userId,
+                metadata: { roleName: updatedRole.name, prevName: role.name }
+            }
+        })
+
         return successResponse(updatedRole)
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to update role'

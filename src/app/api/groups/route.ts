@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { withAuth, withPermission, successResponse, errorResponse } from '@/lib/api-helpers'
+import { withAuth, successResponse, errorResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@/generated/client'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ const createGroupSchema = z.object({
 })
 
 // GET /api/groups - list groups for the account
-export const GET = withPermission('groups:manage', async (req: NextRequest, ctx) => {
+export const GET = withAuth(async (req: NextRequest, ctx) => {
     const groups = await prisma.group.findMany({
         where: { accountId: ctx.accountId },
         include: {
@@ -39,7 +39,7 @@ export const GET = withPermission('groups:manage', async (req: NextRequest, ctx)
 })
 
 // POST /api/groups - create a new group
-export const POST = withPermission('groups:manage', async (req: NextRequest, ctx) => {
+export const POST = withAuth(async (req: NextRequest, ctx) => {
     console.log('DEBUG: accountId =', ctx.accountId)
     try {
         const body = await req.json()

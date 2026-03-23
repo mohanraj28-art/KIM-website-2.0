@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Too many sign in attempts. Please try again later.' }, { status: 429 })
     }
 
+    let email = 'unknown'
+    let accountId = 'default'
+
     try {
         const body = await req.json()
         const parsed = signInSchema.safeParse(body)
@@ -24,8 +27,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid credentials format' }, { status: 400 })
         }
 
-        const { email, password, accountId } = parsed.data
-        console.log(`[SignIn Route] Incoming request for email: ${email}, accountId: ${accountId}`);
+        email = parsed.data.email
+        accountId = parsed.data.accountId
+        const password = parsed.data.password
 
         // Ensure account exists
         await prisma.account.upsert({
@@ -39,7 +43,6 @@ export async function POST(req: NextRequest) {
         })
 
         const userAgent = req.headers.get('user-agent') ?? undefined
-        console.log('[SignIn Route] Calling signInWithPassword...');
         const result = await signInWithPassword(email, password, accountId, ip, userAgent)
 
         // Audit log
@@ -71,6 +74,24 @@ export async function POST(req: NextRequest) {
 
         // Distinguish between auth errors (401) and server errors (500)
         const isAuthError = message.includes('email') || message.includes('password') || message.includes('credentials')
+
+        // Ensure we try to log the failure if we have enough information from the body
+        try {
+            await prisma.auditLog.create({
+                data: {
+                    action: 'user.sign_in.failed',
+                    result: 'FAILURE',
+                    ipAddress: ip,
+                    userAgent: req.headers.get('user-agent') ?? null,
+                    accountId: accountId,
+                    metadata: { email, reason: message },
+                    description: `Failed login attempt for ${email}`
+                }
+            })
+        } catch (logError) {
+            console.error('[SignIn API] Failed to write audit log for failed login:', logError)
+        }
+
         return NextResponse.json(
             { error: message },
             { status: isAuthError ? 401 : 500 }

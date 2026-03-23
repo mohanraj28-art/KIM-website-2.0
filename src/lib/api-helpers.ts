@@ -27,6 +27,7 @@ export function withAuth(handler: Handler) {
 
             const payload = await getUserFromRequest(req)
             if (!payload) {
+                console.error(`[withAuth] Unauthorized. Headers: ${req.headers.get('authorization')} Cookies: ${req.cookies.get('kaappu_token')?.value?.substring(0, 10)}...`);
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
             }
 
@@ -110,44 +111,6 @@ export function withAdminAuth(handler: Handler) {
 
             if (!isOwner) {
                 return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
-            }
-        }
-
-        return handler(req, ctx)
-    })
-}
-
-export function withPermission(permissionKey: string, handler: Handler) {
-    return withAuth(async (req, ctx) => {
-        // Check if user has the specific permission in any of their roles
-        const hasPermission = await prisma.rolePermission.findFirst({
-            where: {
-                role: {
-                    members: {
-                        some: { userId: ctx.userId }
-                    }
-                },
-                permission: {
-                    key: permissionKey
-                }
-            }
-        })
-
-        if (!hasPermission) {
-            // Check if user is the account owner (bypass for owners)
-            const account = await prisma.account.findUnique({
-                where: { id: ctx.accountId },
-                include: {
-                    users: {
-                        orderBy: { createdAt: 'asc' },
-                        take: 1
-                    }
-                }
-            })
-
-            const isOwner = account?.users[0]?.id === ctx.userId
-            if (!isOwner) {
-                return NextResponse.json({ error: `Forbidden: Missing permission ${permissionKey}` }, { status: 403 })
             }
         }
 

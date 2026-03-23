@@ -141,7 +141,7 @@ export default function TenantSettingsPage() {
                             </button>
                         </div>
                         <div className="divide-y divide-white/5">
-                            <MemberRow name="Mokaa Kip" email="mokaa@kaappu.id" role="Global Admin" avatar="M" />
+                            <MemberRow name="Mokaa Kip" email="mokaa@kaappu.id" role="Owner" avatar="M" />
                             <MemberRow name="Sarah Chen" email="sarah@kaappu.id" role="Admin" avatar="S" />
                             <MemberRow name="Alex Rivera" email="alex@kaappu.id" role="Member" avatar="A" />
                         </div>
@@ -198,7 +198,7 @@ function MemberRow({ name, email, role, avatar }: { name: string, email: string,
                 </div>
             </div>
             <div className="flex items-center gap-8">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${role === 'Global Admin' ? 'text-indigo-400 border-indigo-500/20 bg-indigo-500/10' : 'text-slate-500 border-white/5 bg-slate-900/50'
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${role === 'Owner' ? 'text-indigo-400 border-indigo-500/20 bg-indigo-500/10' : 'text-slate-500 border-white/5 bg-slate-900/50'
                     }`}>{role}</span>
                 <button className="p-2 text-slate-600 hover:text-white transition-all">
                     <Trash2 size={16} />

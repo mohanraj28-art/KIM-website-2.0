@@ -13,7 +13,6 @@ export interface User {
     mfaEnabled: boolean
     createdAt: string
     lastSignInAt: string | null
-    socialAccounts?: string[]
 }
 
 export interface Tenant {
@@ -55,9 +54,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoaded, setIsLoaded] = useState(false)
 
     const refreshUser = useCallback(async () => {
-        const token = localStorage.getItem('kaappu_token')
+        let token = localStorage.getItem('kaappu_token')
+
+        // Check for non-httpOnly cookie set by OAuth callback
+        if (!token && typeof document !== 'undefined') {
+            const cookies = document.cookie.split('; ');
+            const tokenCookie = cookies.find(c => c.startsWith('kaappu_token='));
+            if (tokenCookie) {
+                token = tokenCookie.split('=')[1]
+                localStorage.setItem('kaappu_token', token)
+                console.log('[Auth] Synced token from cookie to localStorage')
+            }
+        }
+
         if (!token) {
-            console.log('[Auth] No token found in localStorage');
+            console.log('[Auth] No token found in localStorage or cookies');
             setIsLoaded(true)
             return
         }
@@ -138,6 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         localStorage.removeItem('kaappu_token')
         localStorage.removeItem('kaappu_refresh_token')
+
+        if (typeof document !== 'undefined') {
+            document.cookie = 'kaappu_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
+
         setUser(null)
         setAccessToken(null)
         setTenant(null)

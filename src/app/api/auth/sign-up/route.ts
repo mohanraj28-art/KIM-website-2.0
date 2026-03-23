@@ -63,6 +63,18 @@ export async function POST(req: NextRequest) {
             }
         })
 
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                action: 'user.signed_up',
+                result: 'SUCCESS',
+                ipAddress: ip,
+                userAgent: userAgent ?? null,
+                accountId: accountId,
+                userId: result.user.id
+            }
+        })
+
         sendVerificationEmail(email, verifyToken, firstName).catch(console.error)
 
         const response = NextResponse.json({ success: true, data: result }, { status: 201 })

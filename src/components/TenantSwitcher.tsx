@@ -9,7 +9,7 @@ import {
 
 // Mock tenants for UI (Formerly Orgs)
 const MOCK_TENANTS = [
-    { id: '1', name: 'Kaappu Inc.', role: 'Global Admin', logo: null, color: '#6366f1' },
+    { id: '1', name: 'Kaappu Inc.', role: 'Owner', logo: null, color: '#6366f1' },
     { id: '2', name: 'Design Studio', role: 'Admin', logo: null, color: '#ec4899' },
     { id: '3', name: 'Dev Ops', role: 'Member', logo: null, color: '#10b981' },
 ]

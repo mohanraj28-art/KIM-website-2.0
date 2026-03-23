@@ -93,7 +93,27 @@ export async function GET(
         })
         const providerUser = await userRes.json()
 
-        const email = (providerUser.email || providerUser.mail || '').toLowerCase()
+        let email = (providerUser.email || providerUser.mail || '').toLowerCase()
+
+        // Special case for GitHub: email might be null if private
+        if (!email && provider === 'github') {
+            try {
+                const emailsRes = await fetch('https://api.github.com/user/emails', {
+                    headers: {
+                        Authorization: `Bearer ${tokenData.access_token}`,
+                        Accept: 'application/vnd.github.v3+json'
+                    },
+                })
+                const emailsData = await emailsRes.json()
+                const primaryEmail = emailsData.find((e: any) => e.primary && e.verified)
+                if (primaryEmail) {
+                    email = primaryEmail.email.toLowerCase()
+                }
+            } catch (err) {
+                console.error('Failed to fetch GitHub email', err)
+            }
+        }
+
         const providerUserId = String(providerUser.id || providerUser.sub || '')
         const firstName = providerUser.given_name || providerUser.name?.split(' ')[0] || ''
         const lastName = providerUser.family_name || providerUser.name?.split(' ').slice(1).join(' ') || ''

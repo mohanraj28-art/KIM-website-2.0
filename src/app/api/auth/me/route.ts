@@ -17,9 +17,6 @@ export async function GET(req: NextRequest) {
                     where: { verified: true },
                     select: { type: true, primary: true }
                 },
-                socialAccounts: {
-                    select: { provider: true }
-                },
                 tenantMembers: {
                     include: {
                         tenant: true,
@@ -50,7 +47,6 @@ export async function GET(req: NextRequest) {
                     createdAt: user.createdAt,
                     lastSignInAt: user.lastSignInAt,
                     mfaEnabled,
-                    socialAccounts: user.socialAccounts.map(s => s.provider),
                 },
                 tenant: primaryMember ? {
                     id: primaryMember.tenant.id,

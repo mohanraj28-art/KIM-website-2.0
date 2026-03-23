@@ -63,10 +63,12 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
 }
 
 export function getTokenFromRequest(req: NextRequest): string | null {
-    // Check Authorization header first
     const authHeader = req.headers.get('authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-        return authHeader.slice(7)
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const tokenStr = authHeader.slice(7).trim()
+        if (tokenStr && tokenStr !== 'null' && tokenStr !== 'undefined') {
+            return tokenStr
+        }
     }
 
     // Check cookie

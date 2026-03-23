@@ -40,6 +40,7 @@ export default async function proxy(req: NextRequest) {
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/users') || pathname.startsWith('/api/tenants')) {
         if (!user) {
             if (pathname.startsWith('/api/')) {
+                console.error(`[Proxy] Unauthorized. API Path: ${pathname} Headers: ${req.headers.get('authorization')?.substring(0, 25)} Cookies: ${req.cookies.get('kaappu_token')?.value?.substring(0, 10)}...`);
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
             }
             const url = new URL('/sign-in', req.url)

@@ -95,10 +95,10 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
                 }
             })
 
-            // Create Global Admin role for this tenant
+            // Create Owner role for this tenant
             const ownerRole = await tx.role.create({
                 data: {
-                    name: 'Global Admin',
+                    name: 'Owner',
                     key: 'owner',
                     isSystem: true,
                     accountId: ctx.accountId,

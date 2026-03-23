@@ -133,15 +133,12 @@ export async function signInWithPassword(
     ipAddress?: string,
     userAgent?: string
 ): Promise<AuthResult> {
-    const normalizedEmail = email.trim().toLowerCase()
-
-    const user = await prisma.user.findFirst({
+    const user = await prisma.user.findUnique({
         where: {
-            email: {
-                equals: normalizedEmail,
-                mode: 'insensitive'
-            },
-            accountId
+            accountId_email: {
+                accountId,
+                email
+            }
         },
         include: {
             passwords: {
@@ -154,44 +151,38 @@ export async function signInWithPassword(
 
     if (!user) {
         // Fallback for global search if needed, but per-account is safer
-        const globalUser = await prisma.user.findFirst({
-            where: {
-                email: {
-                    equals: normalizedEmail,
-                    mode: 'insensitive'
-                }
-            }
-        })
+        const globalUser = await prisma.user.findFirst({ where: { email } })
         if (globalUser) {
-            throw new Error(`User found in account ${globalUser.accountId}, but login requested for ${accountId}`)
+            console.log(`[SignIn] User ${email} found in account ${globalUser.accountId}, but login requested for ${accountId}`);
+        } else {
+            console.log('[SignIn] User not found during sign-in:', email);
         }
-        throw new Error('User not found in this workspace')
+        throw new Error('Invalid email or password')
     }
 
     // Account check already handled by findUnique, but double safety
     if (user.accountId !== accountId) {
-        throw new Error(`Account ID mismatch: ${user.accountId} != ${accountId}`)
+        throw new Error('Invalid email or password for this workspace')
     }
 
     const passwordRecord = user.passwords[0]
     if (!passwordRecord) {
-        throw new Error('No password hash found for this user')
+        console.log('[SignIn] No password hash found for user:', email);
+        throw new Error('Invalid email or password')
     }
 
     if (user.banned) {
-        throw new Error('This user account is banned')
+        throw new Error('Your account has been suspended. Please contact support.')
     }
     if (user.locked) {
-        throw new Error('This user account is locked')
+        throw new Error('Your account is temporarily locked. Please try again later.')
     }
 
-    console.log(`[SignIn] Verifying password for user: ${normalizedEmail}`);
-    const isValid = await verifyPassword(password.trim(), passwordRecord.hash)
+    const isValid = await verifyPassword(password, passwordRecord.hash)
     if (!isValid) {
-        console.log('[SignIn] Password mismatch for user:', normalizedEmail);
-        throw new Error('Incorrect password')
+        console.log('[SignIn] Password mismatch for user:', email);
+        throw new Error('Invalid email or password')
     }
-    console.log('[SignIn] Password verified successfully!');
 
     // Update last sign in info
     await prisma.user.update({
