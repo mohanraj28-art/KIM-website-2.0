@@ -20,7 +20,14 @@ export async function GET(req: NextRequest) {
                 tenantMembers: {
                     include: {
                         tenant: true,
-                        role: true
+                        role: { include: { permissions: { include: { permission: true } } } }
+                    }
+                },
+                groupMembers: {
+                    include: {
+                        group: {
+                            include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } }
+                        }
                     }
                 }
             }
@@ -32,6 +39,40 @@ export async function GET(req: NextRequest) {
 
         const mfaEnabled = user.mfaSettings.length > 0
         const primaryMember = user.tenantMembers[0]
+
+        // Aggregate User Permissions
+        const permissionSet = new Set<string>();
+
+        // 1. permissions from Tenant Roles
+        for (const tm of user.tenantMembers) {
+            if (tm.role) {
+                for (const rp of tm.role.permissions) {
+                    permissionSet.add(rp.permission.key);
+                }
+            }
+        }
+
+        // 2. permissions from Group Roles
+        for (const gm of user.groupMembers) {
+            for (const gr of gm.group.roles) {
+                if (gr.role) {
+                    for (const rp of gr.role.permissions) {
+                        permissionSet.add(rp.permission.key);
+                    }
+                }
+            }
+        }
+
+        // Fallback for primary owners
+        const account = await prisma.account.findUnique({
+            where: { id: payload.tid },
+            include: { users: { orderBy: { createdAt: 'asc' }, take: 1 } }
+        });
+        const isOwner = account?.users[0]?.id === payload.sub;
+        if (isOwner) {
+            // Implicitly indicate wildcard or super access
+            permissionSet.add('*');
+        }
 
         return NextResponse.json({
             success: true,
@@ -47,6 +88,7 @@ export async function GET(req: NextRequest) {
                     createdAt: user.createdAt,
                     lastSignInAt: user.lastSignInAt,
                     mfaEnabled,
+                    permissions: Array.from(permissionSet)
                 },
                 tenant: primaryMember ? {
                     id: primaryMember.tenant.id,

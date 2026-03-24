@@ -13,6 +13,7 @@ export interface User {
     mfaEnabled: boolean
     createdAt: string
     lastSignInAt: string | null
+    permissions: string[]
 }
 
 export interface Tenant {
@@ -34,6 +35,7 @@ interface AuthContextType {
     signOut: () => Promise<void>
     switchTenant: (tenantId: string) => void
     refreshUser: () => Promise<void>
+    hasPermission: (permission: string) => boolean
 }
 
 interface SignUpData {
@@ -169,6 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .catch(() => { })
     }
 
+    const hasPermission = useCallback((permission: string) => {
+        if (!user || (!user.permissions && !Array.isArray(user.permissions))) return false;
+        return user.permissions.includes('*') || user.permissions.includes(permission);
+    }, [user]);
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -181,6 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signOut,
             switchTenant,
             refreshUser,
+            hasPermission,
         }}>
             {children}
         </AuthContext.Provider>

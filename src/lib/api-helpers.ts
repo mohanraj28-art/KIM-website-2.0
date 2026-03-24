@@ -118,6 +118,78 @@ export function withAdminAuth(handler: Handler) {
     })
 }
 
+export function withPermission(requiredPermission: string, handler: Handler) {
+    return withAuth(async (req, ctx) => {
+        // Query user with all Tenant and Group roles within context
+        const userWithRoles = await prisma.user.findUnique({
+            where: { id: ctx.userId },
+            include: {
+                tenantMembers: {
+                    where: { tenant: { accountId: ctx.accountId } },
+                    include: {
+                        role: {
+                            include: { permissions: { include: { permission: true } } }
+                        }
+                    }
+                },
+                groupMembers: {
+                    where: { group: { accountId: ctx.accountId } },
+                    include: {
+                        group: {
+                            include: {
+                                roles: {
+                                    include: {
+                                        role: {
+                                            include: { permissions: { include: { permission: true } } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        let hasPermission = false;
+
+        // Check Tenant Role Permissions
+        for (const tm of (userWithRoles?.tenantMembers || [])) {
+            if (tm.role?.permissions.some(rp => rp.permission.key === requiredPermission)) {
+                hasPermission = true;
+                break;
+            }
+        }
+
+        // Check Group Role Permissions
+        if (!hasPermission) {
+            for (const gm of (userWithRoles?.groupMembers || [])) {
+                for (const gr of gm.group.roles) {
+                    if (gr.role.permissions.some(rp => rp.permission.key === requiredPermission)) {
+                        hasPermission = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!hasPermission) {
+            // Owner fallback (Owners implicitly have all permissions)
+            const account = await prisma.account.findUnique({
+                where: { id: ctx.accountId },
+                include: { users: { orderBy: { createdAt: 'asc' }, take: 1 } }
+            });
+            const isOwner = account?.users[0]?.id === ctx.userId;
+            
+            if (!isOwner) {
+                return NextResponse.json({ error: `Forbidden: Requires ${requiredPermission} permission` }, { status: 403 });
+            }
+        }
+
+        return handler(req, ctx);
+    });
+}
+
 export function successResponse(data: unknown, status: number = 200) {
     return NextResponse.json({ success: true, data }, { status })
 }
